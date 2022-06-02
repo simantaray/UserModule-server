@@ -1,5 +1,5 @@
 //admin role verify
-const verifyRoles = (req, res, next) => {
+const verifyAdmin = (req, res, next) => {
   const roleHeader = req.headers.role;
   if (roleHeader) {
     if (roleHeader == "admin") {
@@ -12,7 +12,20 @@ const verifyRoles = (req, res, next) => {
     return res.status(401).json("u dont have any role");
   }
 };
+const verifyTeamLeader = (req, res, next) => {
+    const roleHeader = req.headers.role;
+    if (roleHeader) {
+      if (roleHeader == "teamleader") {
+        req.userRole = "teamleader";
+        next();
+      } else {
+        return res.status(401).json("u are not teamleader");
+      }
+    } else {
+      return res.status(401).json("u dont have any role");
+    }
+  };
 
 module.exports = {
-  verifyRoles,
+    verifyAdmin , verifyTeamLeader
 };

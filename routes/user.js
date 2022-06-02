@@ -1,21 +1,27 @@
 const router = require("express").Router();
 const User = require("../models/User");
-const { verifyRoles } = require("./verifyRoles");
+const bcrypt = require("bcryptjs");
+
+const { verifyAdmin } = require("./verifyRoles");
 
 router.post("/register", async (req, res) => {
+  const passwordHash = bcrypt.hashSync(req.body.password, 10);
+  // console.log(bcrypt.compareSync('Pa$$w0rd', "$2a$10$uRMuqwJergg.c5okh.hHWOTkYkXaQBrDOQQdjPCiot.0qnlljBb/W"))
+
   const newUser = new User({
     username: req.body.username,
     email: req.body.email,
-    password: req.body.password,
-    roles: req.body.roles,
+    password: passwordHash,
   });
-  console.log(newUser);
-  try {
-    const response = await newUser.save();
-    res.status(201).json(response);
-  } catch (e) {
-    res.status(500).json(e);
-  }
+  res.json(newUser);
+
+  //   console.log(newUser);
+  //   try {
+  //     const response = await newUser.save();
+  //     res.status(201).json(response);
+  //   } catch (e) {
+  //     res.status(500).json(e);
+  //   }
 });
 
 router.post("/login", async (req, res) => {
@@ -37,7 +43,7 @@ router.post("/login", async (req, res) => {
 });
 
 //edit
-router.put("/:id", verifyRoles, async (req, res) => {
+router.put("/:id", verifyAdmin, async (req, res) => {
   console.log(req.userRole);
   try {
     const response = await User.findByIdAndUpdate(
@@ -55,30 +61,30 @@ router.put("/:id", verifyRoles, async (req, res) => {
   }
 });
 //add  new role
-router.post("/addrole/:role/:id", verifyRoles, async (req, res) => {
+router.post("/addrole/:role/:id", verifyAdmin, async (req, res) => {
   try {
     const response = await User.findOneAndUpdate(
       { _id: req.params.id },
       { $addToSet: { roles: { $each: [req.params.role] } } },
       { new: true }
     );
-    res.status(200).json(response);
+    if (response) res.status(200).json({ status: "role added" });
   } catch (err) {
     res.status(500).json(err);
   }
 });
 //remove role
-router.post("/removerole/:role/:id", verifyRoles, async (req, res) => {
-    try {
-      const response = await User.findOneAndUpdate(
-        { _id: req.params.id },
-        { $pull: { roles: req.params.role } },
-        { new: true }
-      );
-      res.status(200).json(response);
-    } catch (err) {
-      res.status(500).json(err);
-    }
-  });
+router.post("/removerole/:role/:id", verifyAdmin, async (req, res) => {
+  try {
+    const response = await User.findOneAndUpdate(
+      { _id: req.params.id },
+      { $pull: { roles: req.params.role } },
+      { new: true }
+    );
+    if (response) res.status(200).json({ status: "role Removed" });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
 
 module.exports = router;
