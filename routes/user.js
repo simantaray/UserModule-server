@@ -20,10 +20,24 @@ router.post("/register",async(req,res)=>{
     }
 })
 
+router.post("/login", async(req,res)=>{
+    try {
+        const user = await User.findOne({username:req.body.username});
+        if(!user){
+            res.status(401).json("u r not a user")
+        }else{
 
-
-
-
+            if(user.password !==req.body.password){
+                res.status(401).json("wrong password");
+            }else{
+                const {password, roles,...rest}=user._doc;
+                res.status(200).json({roles});
+            }
+        }
+    } catch (err) {
+        res.status(500).json(err);
+    }
+})
 
 //edit
 router.put("/:id",verifyRoles,async(req,res)=>{
