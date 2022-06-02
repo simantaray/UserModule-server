@@ -54,7 +54,7 @@ router.put("/:id", verifyRoles, async (req, res) => {
     res.status(500);
   }
 });
-//add  new roles
+//add  new role
 router.post("/addrole/:role/:id", verifyRoles, async (req, res) => {
   try {
     const response = await User.findOneAndUpdate(
@@ -67,5 +67,18 @@ router.post("/addrole/:role/:id", verifyRoles, async (req, res) => {
     res.status(500).json(err);
   }
 });
+//remove role
+router.post("/removerole/:role/:id", verifyRoles, async (req, res) => {
+    try {
+      const response = await User.findOneAndUpdate(
+        { _id: req.params.id },
+        { $pull: { roles: req.params.role } },
+        { new: true }
+      );
+      res.status(200).json(response);
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  });
 
 module.exports = router;
