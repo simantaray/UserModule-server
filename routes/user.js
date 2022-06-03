@@ -19,7 +19,7 @@ router.post("/register", async (req, res) => {
     res.status(201).json({...rest});
   } catch (e) {
     if(e.code=="11000"){
-      res.status(400).json({status: "username already exist"});
+      res.status(400).json({status: "username or email already exist"});
     }
     res.status(500).json(e);
   }
