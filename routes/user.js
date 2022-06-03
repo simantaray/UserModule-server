@@ -29,10 +29,10 @@ router.post("/login", async (req, res) => {
   try {
     const response = await User.findOne({ username: req.body.username });
     if (!response) {
-      res.status(401).json("u r not a user");
+      res.status(404).json("u r not a user");
     } else {
       if (!bcrypt.compareSync(req.body.password, response.password)) {
-        res.status(401).json("wrong password");
+        res.status(400).json("wrong password");
       } else {
         const { password, roles, ...rest } = response._doc;
         const acessToken = JWT.sign(
@@ -41,9 +41,13 @@ router.post("/login", async (req, res) => {
             role: response.roles,
           },
           process.env.PASSTOKEN,
-          { expiresIn: "2d" }
+          { expiresIn: "120s" }
         );
-        res.status(200).json({ ...rest, acessToken });
+        const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
+          expiresIn: "1y",
+          audience: response.id,
+        });
+        res.status(200).json({ ...rest, acessToken, refreshToken });
       }
     }
   } catch (err) {
@@ -61,7 +65,7 @@ router.put("/:id", verifyAdmin, async (req, res) => {
       { new: true }
     );
     if (!response) {
-      res.status(401).json("no user found");
+      res.status(404).json("no user found");
     } else {
       res.status(200).json(response);
     }
@@ -80,10 +84,13 @@ router.post("/addrole/:role/:id", verifyAdmin, async (req, res) => {
       assignRole = "hr";
       break;
     case "2":
-      assignRole = "teamleader";
+      assignRole = "project manager";
       break;
     case "3":
-      assignRole = "teammember";
+      assignRole = "team leader";
+      break;
+    case "4":
+      assignRole = "team member";
       break;
     default:
       assignRole = "notValid";
@@ -95,7 +102,7 @@ router.post("/addrole/:role/:id", verifyAdmin, async (req, res) => {
         { $addToSet: { roles: { $each: [assignRole] } } },
         { new: true }
       );
-      if (response) res.status(200).json({ status: "role added" });
+      if (response) res.status(201).json({ status: "role added" });
     } catch (err) {
       res.status(500).json(err);
     }
@@ -113,10 +120,13 @@ router.post("/removerole/:role/:id", verifyAdmin, async (req, res) => {
       assignRole = "hr";
       break;
     case "2":
-      assignRole = "teamleader";
+      assignRole = "project manager";
       break;
     case "3":
-      assignRole = "teammember";
+      assignRole = "team leader";
+      break;
+    case "4":
+      assignRole = "team member";
       break;
     default:
       assignRole = "notValid";
@@ -132,7 +142,40 @@ router.post("/removerole/:role/:id", verifyAdmin, async (req, res) => {
     } catch (err) {
       res.status(500).json(err);
     }
-  }else res.json({ status: "not a valid role" });
+  } else res.json({ status: "not a valid role" });
+});
+
+//create new accesstoken
+router.post("/ref-token", async (req, res) => {
+  // console.log(req.headers.reftoken)
+  try {
+    const refHeader = req.headers.reftoken.split(" ")[1];
+    // console.log(refHeader);
+    if (refHeader) {
+      JWT.verify(refHeader, process.env.REFTOKEN, async(err, user) => {
+        if (err) res.status(404).json({ status: "Token is not valid!" });
+        else {
+          const response = await User.findOne({ _id: user.aud });
+          if (!response) {
+            res.status(401).json("u r not a user");
+          } else {
+              const { password, roles, ...rest } = response._doc;
+              const acessToken = JWT.sign(
+                {
+                  id: response.id,
+                  role: response.roles,
+                },
+                process.env.PASSTOKEN,
+                { expiresIn: "120s" }
+              );
+              res.status(201).json(acessToken);
+          }
+        }
+      });
+    }
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 module.exports = router;
