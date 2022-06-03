@@ -16,10 +16,10 @@ router.post("/register", async (req, res) => {
   try {
     const response = await newUser.save();
     const { password, ...rest } = response._doc;
-    res.status(201).json({...rest});
+    res.status(201).json({ ...rest });
   } catch (e) {
-    if(e.code=="11000"){
-      res.status(400).json({status: "username or email already exist"});
+    if (e.code == "11000") {
+      res.status(400).json({ status: "username or email already exist" });
     }
     res.status(500).json(e);
   }
@@ -104,16 +104,35 @@ router.post("/addrole/:role/:id", verifyAdmin, async (req, res) => {
 
 //remove role
 router.post("/removerole/:role/:id", verifyAdmin, async (req, res) => {
-  try {
-    const response = await User.findOneAndUpdate(
-      { _id: req.params.id },
-      { $pull: { roles: req.params.role } },
-      { new: true }
-    );
-    if (response) res.status(200).json({ status: "role Removed" });
-  } catch (err) {
-    res.status(500).json(err);
+  let assignRole;
+  switch (req.params.role) {
+    case "0":
+      assignRole = "admin";
+      break;
+    case "1":
+      assignRole = "hr";
+      break;
+    case "2":
+      assignRole = "teamleader";
+      break;
+    case "3":
+      assignRole = "teammember";
+      break;
+    default:
+      assignRole = "notValid";
   }
+  if (assignRole != "notValid") {
+    try {
+      const response = await User.findOneAndUpdate(
+        { _id: req.params.id },
+        { $pull: { roles: assignRole } },
+        { new: true }
+      );
+      if (response) res.status(200).json({ status: "role Removed" });
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }else res.json({ status: "not a valid role" });
 });
 
 module.exports = router;
