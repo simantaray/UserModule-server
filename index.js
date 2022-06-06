@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 
 const userRoute = require("./routes/user");
+const tableRouter = require("./routes/table")
 
 const app = express();
 dotenv.config();
@@ -23,4 +24,5 @@ mongoose
     console.log(e);
   });
 
-app.use("/api/", userRoute);
+app.use("/api/user", userRoute);
+app.use("/api/table", tableRouter);
