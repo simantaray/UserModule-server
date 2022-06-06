@@ -15,8 +15,20 @@ router.post("/register", async (req, res) => {
   });
   try {
     const response = await newUser.save();
-    const { password, ...rest } = response._doc;
-    res.status(201).json({ ...rest });
+    const { password, roles,...rest } = response._doc;
+    const acessToken = JWT.sign(
+      {
+        id: response.id,
+        role: response.roles,
+      },
+      process.env.PASSTOKEN,
+      { expiresIn: "120s" }
+    );
+    const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
+      expiresIn: "1y",
+      audience: response.id,
+    });
+    res.status(201).json({ ...rest, acessToken, refreshToken });
   } catch (e) {
     if (e.code == "11000") {
       res.status(400).json({ status: "username or email already exist" });
