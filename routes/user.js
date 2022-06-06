@@ -22,7 +22,7 @@ router.post("/register", async (req, res) => {
         role: response.roles,
       },
       process.env.PASSTOKEN,
-      { expiresIn: "120s" }
+      { expiresIn: "15m" }
     );
     const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
       expiresIn: "1y",
@@ -41,7 +41,7 @@ router.post("/login", async (req, res) => {
   try {
     const response = await User.findOne({ username: req.body.username });
     if (!response) {
-      res.status(404).json("u r not a user");
+      res.status(404).json("No user found");
     } else {
       if (!bcrypt.compareSync(req.body.password, response.password)) {
         res.status(400).json("wrong password");
@@ -53,7 +53,7 @@ router.post("/login", async (req, res) => {
             role: response.roles,
           },
           process.env.PASSTOKEN,
-          { expiresIn: "120s" }
+          { expiresIn: "15m" }
         );
         const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
           expiresIn: "1y",
