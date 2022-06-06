@@ -15,20 +15,20 @@ router.post("/register", async (req, res) => {
   });
   try {
     const response = await newUser.save();
-    const { password, roles,...rest } = response._doc;
+    const { password, ...rest } = response._doc;
     const acessToken = JWT.sign(
-      {
-        id: response.id,
-        role: response.roles,
-      },
-      process.env.PASSTOKEN,
-      { expiresIn: "15m" }
-    );
-    const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
-      expiresIn: "1y",
-      audience: response.id,
-    });
-    res.status(201).json({ ...rest, acessToken, refreshToken });
+          {
+            id: response.id,
+            role: response.roles,
+          },
+          process.env.PASSTOKEN,
+          { expiresIn: "120s" }
+        );
+        const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
+          expiresIn: "1y",
+          audience: response.id,
+        });
+    res.status(201).json({ ...rest,acessToken, refreshToken});
   } catch (e) {
     if (e.code == "11000") {
       res.status(400).json({ status: "username or email already exist" });
@@ -39,9 +39,9 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const response = await User.findOne({ username: req.body.username });
+    const response = await User.findOne({ username: req.body.username }).select("+password");
     if (!response) {
-      res.status(404).json("No user found");
+      res.status(404).json("u r not a user");
     } else {
       if (!bcrypt.compareSync(req.body.password, response.password)) {
         res.status(400).json("wrong password");
@@ -53,7 +53,7 @@ router.post("/login", async (req, res) => {
             role: response.roles,
           },
           process.env.PASSTOKEN,
-          { expiresIn: "15m" }
+          { expiresIn: "120s" }
         );
         const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
           expiresIn: "1y",
