@@ -23,7 +23,7 @@ router.post("/register", async (req, res) => {
             role: response.roles,
           },
           process.env.PASSTOKEN,
-          { expiresIn: "1d" }
+          { expiresIn: "30m" }
         );
         const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
           expiresIn: "1y",
@@ -54,7 +54,7 @@ router.post("/login", async (req, res) => {
             role: response.roles,
           },
           process.env.PASSTOKEN,
-          { expiresIn: "30s" }
+          { expiresIn: "30m" }
         );
         const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
           expiresIn: "1y",
@@ -179,7 +179,7 @@ router.get("/ref-token",async (req, res) => {
                   role: response.roles,
                 },
                 process.env.PASSTOKEN,
-                { expiresIn: "20s" }
+                { expiresIn: "30m" }
               );
               res.status(201).json({acessToken});
           }
