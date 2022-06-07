@@ -3,7 +3,7 @@ const User = require("../models/User");
 
 const { verifyUser } = require("./verifyRoles");
 
-router.get("/all" , verifyUser,async(req,res)=>{
+router.get("/all",verifyUser,async(req,res)=>{
     const query = req.query.new;
     try {
       const response = query

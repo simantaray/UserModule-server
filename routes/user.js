@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const JWT = require("jsonwebtoken");
 
 const { verifyAdmin } = require("./verifyRoles");
+const {checkExpireJwt} = require("./expireJwt")
 
 router.post("/register", async (req, res) => {
   const passwordHash = bcrypt.hashSync(req.body.password, 10);
@@ -22,7 +23,7 @@ router.post("/register", async (req, res) => {
             role: response.roles,
           },
           process.env.PASSTOKEN,
-          { expiresIn: "120s" }
+          { expiresIn: "1d" }
         );
         const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
           expiresIn: "1y",
@@ -53,7 +54,7 @@ router.post("/login", async (req, res) => {
             role: response.roles,
           },
           process.env.PASSTOKEN,
-          { expiresIn: "120s" }
+          { expiresIn: "30s" }
         );
         const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
           expiresIn: "1y",
@@ -86,7 +87,7 @@ router.put("/:id", verifyAdmin, async (req, res) => {
   }
 });
 //add  new role
-router.post("/addrole/:role/:id", verifyAdmin, async (req, res) => {
+router.put("/addrole/:role/:id", verifyAdmin, async (req, res) => {
   let assignRole;
   switch (req.params.role) {
     case "0":
@@ -158,10 +159,10 @@ router.post("/removerole/:role/:id", verifyAdmin, async (req, res) => {
 });
 
 //create new accesstoken
-router.post("/ref-token", async (req, res) => {
+router.get("/ref-token",async (req, res) => {
   // console.log(req.headers.reftoken)
   try {
-    const refHeader = req.headers.reftoken.split(" ")[1];
+    const refHeader = req.headers.token.split(" ")[1];
     // console.log(refHeader);
     if (refHeader) {
       JWT.verify(refHeader, process.env.REFTOKEN, async(err, user) => {
@@ -178,9 +179,9 @@ router.post("/ref-token", async (req, res) => {
                   role: response.roles,
                 },
                 process.env.PASSTOKEN,
-                { expiresIn: "120s" }
+                { expiresIn: "20s" }
               );
-              res.status(201).json(acessToken);
+              res.status(201).json({acessToken});
           }
         }
       });
