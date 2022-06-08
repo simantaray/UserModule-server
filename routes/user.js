@@ -3,8 +3,9 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const JWT = require("jsonwebtoken");
 
+
 const { verifyAdmin } = require("./verifyRoles");
-const {checkExpireJwt} = require("./expireJwt")
+const { checkExpireJwt } = require("./expireJwt");
 
 router.post("/register", async (req, res) => {
   const passwordHash = bcrypt.hashSync(req.body.password, 10);
@@ -18,18 +19,18 @@ router.post("/register", async (req, res) => {
     const response = await newUser.save();
     const { password, ...rest } = response._doc;
     const acessToken = JWT.sign(
-          {
-            id: response.id,
-            role: response.roles,
-          },
-          process.env.PASSTOKEN,
-          { expiresIn: "30m" }
-        );
-        const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
-          expiresIn: "1y",
-          audience: response.id,
-        });
-    res.status(201).json({ ...rest,acessToken, refreshToken});
+      {
+        id: response.id,
+        role: response.roles,
+      },
+      process.env.PASSTOKEN,
+      { expiresIn: "30m" }
+    );
+    const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
+      expiresIn: "1y",
+      audience: response.id,
+    });
+    res.status(201).json({ ...rest, acessToken, refreshToken });
   } catch (e) {
     if (e.code == "11000") {
       res.status(400).json({ status: "username or email already exist" });
@@ -40,7 +41,9 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const response = await User.findOne({ username: req.body.username }).select("+password");
+    const response = await User.findOne({ username: req.body.username }).select(
+      "+password"
+    );
     if (!response) {
       res.status(404).json("u r not a user");
     } else {
@@ -54,13 +57,14 @@ router.post("/login", async (req, res) => {
             role: response.roles,
           },
           process.env.PASSTOKEN,
-          { expiresIn: "30m" }
+          { expiresIn: "30s" }
         );
         const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
           expiresIn: "1y",
           audience: response.id,
         });
-        res.status(200).json({ ...rest, acessToken, refreshToken });
+        res.status(200).cookie("refToken",refreshToken,{httpOnly:true}).json({ ...rest, acessToken,refreshToken  })
+        // res.status(200);
       }
     }
   } catch (err) {
@@ -159,29 +163,28 @@ router.post("/removerole/:role/:id", verifyAdmin, async (req, res) => {
 });
 
 //create new accesstoken
-router.get("/ref-token",async (req, res) => {
-  // console.log(req.headers.reftoken)
+router.get("/ref-token", async (req, res) => {
+  const Header = req.headers.token;
   try {
-    const refHeader = req.headers.token.split(" ")[1];
-    // console.log(refHeader);
+    const refHeader = Header.split(" ")[1];
     if (refHeader) {
-      JWT.verify(refHeader, process.env.REFTOKEN, async(err, user) => {
+      JWT.verify(refHeader, process.env.REFTOKEN, async (err, user) => {
         if (err) res.status(404).json({ status: "Token is not valid!" });
         else {
           const response = await User.findOne({ _id: user.aud });
           if (!response) {
             res.status(401).json("u r not a user");
           } else {
-              const { password, roles, ...rest } = response._doc;
-              const acessToken = JWT.sign(
-                {
-                  id: response.id,
-                  role: response.roles,
-                },
-                process.env.PASSTOKEN,
-                { expiresIn: "30m" }
-              );
-              res.status(201).json({acessToken});
+            const { password, roles, ...rest } = response._doc;
+            const acessToken = JWT.sign(
+              {
+                id: response.id,
+                role: response.roles,
+              },
+              process.env.PASSTOKEN,
+              { expiresIn: "10s" }
+            );
+            res.status(201).json({ acessToken });
           }
         }
       });
