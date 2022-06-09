@@ -24,7 +24,7 @@ router.post("/register", async (req, res) => {
         role: response.roles,
       },
       process.env.PASSTOKEN,
-      { expiresIn: "30m" }
+      { expiresIn: "5m" }
     );
     const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
       expiresIn: "1y",
@@ -40,6 +40,10 @@ router.post("/register", async (req, res) => {
 });
 
 router.post("/login", async (req, res) => {
+  const options = {
+    expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+  };
   try {
     const response = await User.findOne({ username: req.body.username }).select(
       "+password"
@@ -57,13 +61,13 @@ router.post("/login", async (req, res) => {
             role: response.roles,
           },
           process.env.PASSTOKEN,
-          { expiresIn: "30s" }
+          { expiresIn: "5m" }
         );
         const refreshToken = JWT.sign({}, process.env.REFTOKEN, {
           expiresIn: "1y",
           audience: response.id,
         });
-        res.status(200).cookie("refToken",refreshToken,{httpOnly:true}).json({ ...rest, acessToken,refreshToken  })
+        res.status(200).cookie("token",refreshToken,options).json({...rest,acessToken,refreshToken})
         // res.status(200);
       }
     }
@@ -165,10 +169,13 @@ router.post("/removerole/:role/:id", verifyAdmin, async (req, res) => {
 //create new accesstoken
 router.get("/ref-token", async (req, res) => {
   const Header = req.headers.token;
+  const { token } = req.cookies;
+  console.log(token)
+  
   try {
-    const refHeader = Header.split(" ")[1];
-    if (refHeader) {
-      JWT.verify(refHeader, process.env.REFTOKEN, async (err, user) => {
+    // const refHeader = Header.split(" ")[1];
+    if (token) {
+      JWT.verify(token, process.env.REFTOKEN, async (err, user) => {
         if (err) res.status(404).json({ status: "Token is not valid!" });
         else {
           const response = await User.findOne({ _id: user.aud });
@@ -182,7 +189,7 @@ router.get("/ref-token", async (req, res) => {
                 role: response.roles,
               },
               process.env.PASSTOKEN,
-              { expiresIn: "10s" }
+              { expiresIn: "5m" }
             );
             res.status(201).json({ acessToken });
           }
